@@ -31,26 +31,31 @@ if (isset($_POST['add'])) {
     }
 
     // Lưu thông tin vào DB
-    $stmt = $conn->prepare("INSERT INTO products (name, description, price, sale_price, image, category_id, status) VALUES (?, ?, ?, ?, ?, ?, 1)");
-    $stmt->bind_param("ssddsi", $name, $description, $price, $sale_price, $targetPath, $category_id);
-    $stmt->execute();
+    $stmt = $conn->prepare("INSERT INTO products (name, description, price, sale_price, image, category_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))");
+    $stmt->execute([$name, $description, $price, $sale_price, $targetPath, $category_id]);
 
     header("Location: product-management.php");
     exit;
 }
 
-
 // Xử lý xóa món ăn
 if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     $id = intval($_GET['delete']);
-    $conn->query("DELETE FROM products WHERE id = $id");
+    $stmt = $conn->prepare("DELETE FROM products WHERE id = ?");
+    $stmt->execute([$id]);
     header("Location: product-management.php");
     exit;
 }
 
 // Lấy danh sách sản phẩm và danh mục
-$products = $conn->query("SELECT p.*, c.name AS category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.created_at DESC")->fetch_all(MYSQLI_ASSOC);
-$categories = $conn->query("SELECT * FROM categories WHERE status = 1")->fetch_all(MYSQLI_ASSOC);
+$products = $conn->query("
+    SELECT p.*, c.name AS category_name
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    ORDER BY p.created_at DESC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+$categories = $conn->query("SELECT * FROM categories WHERE status = 1")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -77,7 +82,7 @@ $categories = $conn->query("SELECT * FROM categories WHERE status = 1")->fetch_a
 <div class="admin-container">
     <h2>Quản lý món ăn</h2>
 
-<form class="add-form" method="POST" enctype="multipart/form-data">
+    <form class="add-form" method="POST" enctype="multipart/form-data">
         <h3>➕ Thêm món mới</h3>
         <input type="text" name="name" placeholder="Tên món ăn" required>
         <textarea name="description" placeholder="Mô tả món ăn" rows="3"></textarea>
@@ -122,7 +127,6 @@ $categories = $conn->query("SELECT * FROM categories WHERE status = 1")->fetch_a
                 <td><?= htmlspecialchars($p['category_name'] ?? '-') ?></td>
                 <td><?= $p['created_at'] ?></td>
                 <td>
-                    <!-- Bạn có thể thêm form sửa riêng -->
                     <a href="product-management.php?delete=<?= $p['id'] ?>" class="btn btn-danger" onclick="return confirm('Xoá món ăn này?')">Xoá</a>
                 </td>
             </tr>

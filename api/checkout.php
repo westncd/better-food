@@ -17,17 +17,17 @@ if (!$data || empty($data['items']) || $data['total'] <= 0) {
 // Giả sử bạn đã có kết nối $conn từ database.php
 require_once '../config/database.php';
 
-$stmt = $conn->prepare("INSERT INTO orders (user_id, total_amount, created_at) VALUES (?, ?, NOW())");
-$stmt->bind_param("id", $_SESSION['user']['id'], $data['total']);
-$stmt->execute();
-$order_id = $stmt->insert_id;
+$stmt = $conn->prepare("INSERT INTO orders (user_id, total_amount, created_at) VALUES (?, ?, datetime('now'))");
+$stmt->execute([$_SESSION['user']['id'], $data['total']]);
+$order_id = $conn->lastInsertId(); 
 
 // Lưu từng sản phẩm
 $stmt_item = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
 foreach ($data['items'] as $item) {
-    $stmt_item->bind_param("iiid", $order_id, $item['id'], $item['quantity'], $item['price']);
-    $stmt_item->execute();
+    $stmt_item = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+    $stmt_item->execute([$order_id, $item['id'], $item['quantity'], $item['price']]);
 }
+
 
 echo json_encode(['success' => true, 'order_id' => $order_id]);
 ?>

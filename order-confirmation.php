@@ -11,9 +11,8 @@ if ($order_id <= 0) {
 
 // Lấy thông tin đơn hàng
 $stmt = $conn->prepare("SELECT * FROM orders WHERE id = ?");
-$stmt->bind_param("i", $order_id);
-$stmt->execute();
-$order = $stmt->get_result()->fetch_assoc();
+$stmt->execute([$order_id]);
+$order = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$order) {
     echo "<h2>Đơn hàng không tồn tại</h2>";
@@ -27,9 +26,8 @@ $stmt_items = $conn->prepare("
     JOIN products p ON oi.product_id = p.id
     WHERE oi.order_id = ?
 ");
-$stmt_items->bind_param("i", $order_id);
-$stmt_items->execute();
-$items = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt_items->execute([$order_id]);
+$items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -40,14 +38,14 @@ $items = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <div class="order-confirm" style="max-width: 700px; margin-top: 100px;">
-        <h2>Cảm ơn bạn đã đặt hàng!</h2>
+    <div class="order-confirm" style="max-width: 700px; margin: 100px auto; padding: 2rem; background: #fff; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+        <h2 style="color: #27ae60;">🎉 Cảm ơn bạn đã đặt hàng!</h2>
         <p>Đơn hàng của bạn đã được ghi nhận thành công.</p>
         <h3>Chi tiết đơn hàng #<?= $order_id ?></h3>
-        <ul>
+        <ul style="padding-left: 1.2rem;">
             <?php foreach ($items as $item): ?>
-                <li>
-                    <?= htmlspecialchars($item['name']) ?> x <?= $item['quantity'] ?> -
+                <li style="margin-bottom: 6px;">
+                    <?= htmlspecialchars($item['name']) ?> x <?= $item['quantity'] ?> – 
                     <?= number_format($item['price']) ?>đ
                 </li>
             <?php endforeach; ?>

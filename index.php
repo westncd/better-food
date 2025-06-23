@@ -3,24 +3,14 @@ session_start();
 require_once 'config/database.php';
 
 // Lấy danh sách món ăn từ database
-$sql = "SELECT * FROM products WHERE status = 1 ORDER BY created_at DESC";
-$result = $conn->query($sql);
-$products = [];
-if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        $products[] = $row;
-    }
-}
+$stmt = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY created_at DESC");
+$stmt->execute();
+$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Lấy danh mục
-$sql_categories = "SELECT * FROM categories WHERE status = 1";
-$result_categories = $conn->query($sql_categories);
-$categories = [];
-if ($result_categories->num_rows > 0) {
-    while($row = $result_categories->fetch_assoc()) {
-        $categories[] = $row;
-    }
-}
+$stmt_cat = $conn->prepare("SELECT * FROM categories WHERE status = 1");
+$stmt_cat->execute();
+$categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>

@@ -1,0 +1,23 @@
+runtime: php81
+
+handlers:
+  # Tĩnh: assets/
+  - url: /assets
+    static_dir: assets
+
+  # Tĩnh: uploads/
+  - url: /uploads
+    static_dir: uploads
+
+  # Các file tĩnh cụ thể
+  - url: /(.+\.(css|js|png|jpg|jpeg|gif|webp|ico|svg|woff|woff2|ttf|eot|txt|pdf))
+    static_files: \1
+    upload: .+\.(css|js|png|jpg|jpeg|gif|webp|ico|svg|woff|woff2|ttf|eot|txt|pdf)
+
+  # Xử lý file PHP
+  - url: /.*\.php$
+    script: auto
+
+  # Route mặc định: chỉ nên áp dụng nếu bạn dùng Vue/React SPA
+  # - url: /.*
+  #   script: index.php
