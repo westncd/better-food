@@ -1131,4 +1131,9 @@ table.user-table tr:hover {
         transform: scale(1);
         opacity: 1;
     }
+}.roboto-regular {
+  font-family: "Roboto", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
 }
