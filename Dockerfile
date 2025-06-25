@@ -6,11 +6,17 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     && docker-php-ext-install pdo_sqlite
 
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 # Enable Apache rewrite module
 RUN a2enmod rewrite
 
 # Copy application files
 COPY . /var/www/html/
+
+# Run Composer install
+RUN composer install
 
 # Make upload directory writable
 RUN mkdir -p /var/www/html/uploads /var/www/html/tmp \
