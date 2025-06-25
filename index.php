@@ -192,6 +192,14 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </section>
 
+    <section class="survey-wrapper">
+        <div class="survey-section">
+            <h3>Điền khảo sát nhé!</h3>
+            <p>Ý kiến của bạn giúp chúng mình cải thiện dịch vụ nè:</p>
+            <iframe src="https://survey.zohopublic.com/zs/ldD5Zm" title="Khảo sát khách hàng" allow="autoplay" allowfullscreen></iframe>
+        </div>
+    </section>
+
     <!-- YouTube Section -->
     <section class="youtube-section">
         <div class="container">
