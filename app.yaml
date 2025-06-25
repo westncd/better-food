@@ -1,0 +1,22 @@
+runtime: php81
+
+env_variables:
+  GOOGLE_STORAGE_BUCKET: "foodstore-images"
+
+handlers:
+  # Tĩnh: assets/
+  - url: /assets
+    static_dir: assets
+
+  # Các file tĩnh cụ thể (CSS, JS, hình ảnh, font, v.v.)
+  - url: /(.+\.(css|js|png|jpg|jpeg|gif|webp|ico|svg|woff|woff2|ttf|eot|txt|pdf))
+    static_files: \1
+    upload: .+\.(css|js|png|jpg|jpeg|gif|webp|ico|svg|woff|woff2|ttf|eot|txt|pdf)
+
+  # Xử lý file PHP
+  - url: /.*\.php$
+    script: auto
+
+  # Route mặc định cho các yêu cầu khác (fallback đến index.php nếu cần)
+  - url: /.*
+    script: auto
