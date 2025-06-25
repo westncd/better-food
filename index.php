@@ -3,20 +3,66 @@ session_start();
 require_once 'config/database.php';
 
 // YouTube API call
-$apiKey = 'AIzaSyBudT7keuhK7_S0-soqKxItIe01-H5dp9s'; 
-$searchQuery = 'food recipes'; 
+$apiKey = 'AIzaSyA7Wg-TthgHJzPp73GeXDR93t3JBNONq4s'; // ← Key của bạn
+$searchQuery = 'food recipes'; // Có thể sửa thành từ khóa khác
 $maxResults = 4;
 
 $youtubeApiUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=" . urlencode($searchQuery) . "&key={$apiKey}&maxResults={$maxResults}";
 
-$youtubeResponse = file_get_contents($youtubeApiUrl);
-$youtubeData = json_decode($youtubeResponse, true);
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $youtubeApiUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($httpCode == 200) {
+    $youtubeData = json_decode($response, true);
+} else {
+    $youtubeData = ['items' => []]; // để tránh lỗi foreach
+    error_log("❌ YouTube API error: HTTP $httpCode - $response");
+}
+
+if (isset($_SESSION['user']['uid'])) {
+    $projectId = 'foodstore-1c8f1'; // ← Thay bằng Project ID của bạn
+    $uid = $_SESSION['user']['uid'];
+    $documentPath = "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/users/$uid";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $documentPath);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $result = json_decode($response, true);
+    
+    if (isset($result['fields'])) {
+        $userData = [
+            'username' => $result['fields']['username']['stringValue'] ?? '',
+            'email'    => $result['fields']['email']['stringValue'] ?? '',
+            'role'     => $result['fields']['role']['stringValue'] ?? 'user',
+        ];
+    }
+}
+
 
 
 // Lấy danh sách món ăn từ database
-$stmt = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY created_at DESC");
-$stmt->execute();
+// $stmt = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY created_at DESC");
+// $stmt->execute();
+// $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$search = $_GET['search'] ?? '';
+
+if (!empty($search)) {
+    $stmt = $conn->prepare("SELECT * FROM products WHERE status = 1 AND name LIKE ? ORDER BY created_at DESC");
+    $stmt->execute(["%" . $search . "%"]);
+} else {
+    $stmt = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY created_at DESC");
+    $stmt->execute();
+}
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 // Lấy danh mục
 $stmt_cat = $conn->prepare("SELECT * FROM categories WHERE status = 1");
@@ -73,11 +119,15 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
                     </div>
-                    <?php if(isset($_SESSION['user'])): ?>
+                    <div class="search-icon" onclick="openSearchModal()" title="Tìm kiếm">
+                        <i class="fas fa-search"></i>
+                    </div>
+
+                    <?php if(isset($userData)): ?>
                     <div class="user-menu">
-                        <span>Xin chào, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
+                        <span>Xin chào, <?= htmlspecialchars($userData['username']) ?></span>
                         <a href="profile.php" class="btn-logout">Thông tin</a>
-                        <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                        <?php if ($userData['role'] === 'admin'): ?>
                         <a href="user-management.php" class="btn-logout">Quản lý người dùng</a>
                         <a href="product-management.php" class="btn-logout">Quản lý món ăn</a>
                         <?php endif; ?>
@@ -131,7 +181,9 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
             </div>
             <div class="product-grid" id="productGrid">
                 <?php foreach($products as $product): ?>
-                <div class="product-card" data-category="<?php echo $product['category_id']; ?>">
+                <div class="product-card"
+                     data-category="<?php echo $product['category_id']; ?>"
+                     data-name="<?php echo strtolower($product['name']); ?>">
                     <div class="product-image">
                         <img src="<?php echo $product['image']; ?>" alt="<?php echo $product['name']; ?>">
                         <div class="product-overlay">
@@ -145,10 +197,10 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                         <p class="product-description"><?php echo substr($product['description'], 0, 100); ?>...</p>
                         <div class="product-price">
                             <?php if($product['sale_price'] > 0): ?>
-                            <span class="original-price"><?php echo number_format($product['price']); ?>đ</span>
-                            <span class="sale-price"><?php echo number_format($product['sale_price']); ?>đ</span>
+                                <span class="original-price"><?php echo number_format($product['price']); ?>đ</span>
+                                <span class="sale-price"><?php echo number_format($product['sale_price']); ?>đ</span>
                             <?php else: ?>
-                            <span class="price"><?php echo number_format($product['price']); ?>đ</span>
+                                <span class="price"><?php echo number_format($product['price']); ?>đ</span>
                             <?php endif; ?>
                         </div>
                         <button class="btn-add-cart"
@@ -157,6 +209,7 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                         </button>
                     </div>
                 </div>
+
                 <?php endforeach; ?>
             </div>
         </div>
@@ -190,9 +243,17 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
                 <div class="about-image">
-                    <img src="assets/images/about-us.jpg" alt="Về chúng tôi">
+                    <img src="uploads/about-us.jpg" alt="Về chúng tôi">
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section class="survey-wrapper">
+        <div class="survey-section">
+            <h3>Điền khảo sát nhé!</h3>
+            <p>Ý kiến của bạn giúp chúng mình cải thiện dịch vụ nè:</p>
+            <iframe src="https://survey.zohopublic.com/zs/ldD5Zm" title="Khảo sát khách hàng" allow="autoplay" allowfullscreen></iframe>
         </div>
     </section>
 
@@ -472,6 +533,56 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
     </script>
 
     <script src="assets/js/script.js"></script>
-</body>
 
+    <div class="modal" id="searchModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="modal-close" onclick="closeSearchModal()">&times;</span>
+            <h3>Tìm kiếm sản phẩm</h3>
+            <form method="GET" action="#menu">
+                <input type="text" name="search" id="searchInput" placeholder="Nhập tên món ăn..." style="width: 100%; padding: 10px; margin-bottom: 1rem;" required>
+                <button type="submit" style="padding: 10px 20px; background: #e67e22; color: white; border: none; border-radius: 6px;">🔍 Tìm kiếm</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openSearchModal() {
+            document.getElementById('searchModal').style.display = 'block';
+            document.getElementById('searchInput').focus();
+        }
+
+        function closeSearchModal() {
+            document.getElementById('searchModal').style.display = 'none';
+        }
+
+        // Đóng modal nếu bấm ngoài vùng nội dung
+        window.onclick = function(event) {
+            const modal = document.getElementById('searchModal');
+            if (event.target === modal) {
+                closeSearchModal();
+            }
+        }
+        document.getElementById("searchInput").addEventListener("input", function () {
+            const keyword = this.value.toLowerCase().trim();
+            const products = document.querySelectorAll(".product-card");
+
+            products.forEach(product => {
+                function removeAccents(str) {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+        document.getElementById("searchInput").addEventListener("input", function () {
+            const keyword = removeAccents(this.value.trim());
+            const products = document.querySelectorAll(".product-card");
+            products.forEach(product => {
+                const name = removeAccents(product.dataset.name || "");
+                product.style.display = name.includes(keyword) ? "block" : "none";
+            });
+        });
+
+            });
+        });
+
+    </script>
+</body>
 </html>

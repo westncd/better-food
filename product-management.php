@@ -24,37 +24,48 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     // }
 
     //Xử lý thêm món ăn
-    if (isset($_POST['add'])) {
+    // Xử lý thêm món ăn
+if (isset($_POST['add'])) {
     $name = $_POST['name'];
     $description = $_POST['description'];
     $price = floatval($_POST['price']);
     $sale_price = floatval($_POST['sale_price']);
     $category_id = intval($_POST['category_id']);
 
-    $imageUrl = null; // Giá trị mặc định nếu không có hình ảnh
+    $imageUrl = null;
 
-    // Xử lý hình ảnh
-    if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] == 0) {
-        $file = $_FILES['image_file'];
-        $fileName = time() . '_' . basename($file['name']);
-        $destinationPath = $fileName;
-
-        try {
-            $storage = new CloudStorage();
-            $imageUrl = $storage->uploadFile($file['tmp_name'], $destinationPath);
-            $_SESSION['image_url'] = $imageUrl; // Lưu tạm thời
-        } catch (Exception $e) {
-            echo "Lỗi khi tải hình ảnh: " . $e->getMessage();
+    // Xử lý hình ảnh và lưu vào thư mục uploads/
+    if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === 0) {
+        $uploadDir = 'uploads/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
         }
+
+        $file = $_FILES['image_file'];
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            die("Chỉ cho phép ảnh JPG, PNG, WEBP.");
+        }
+
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $fileName = time() . '_' . uniqid() . '.' . $ext;
+        $targetPath = $uploadDir . $fileName;
+
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            die("Lỗi khi upload ảnh.");
+        }
+
+        $imageUrl = $targetPath; // Lưu đường dẫn vào DB
     }
 
-    // Lưu thông tin vào DB (dùng $imageUrl, mặc định null nếu lỗi)
+    // Lưu vào DB
     $stmt = $conn->prepare("INSERT INTO products (name, description, price, sale_price, image, category_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))");
     $stmt->execute([$name, $description, $price, $sale_price, $imageUrl, $category_id]);
 
     header("Location: product-management.php");
     exit;
 }
+
 
 // Xử lý xóa món ăn
 if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {

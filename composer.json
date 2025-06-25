@@ -12,6 +12,8 @@
         }
     ],
     "require": {
-        "google/cloud-storage": "^1.48"
+        "google/cloud-storage": "^1.48",
+        "sendgrid/sendgrid": "^8.1",
+        "kreait/firebase-php": "^7.19"
     }
 }

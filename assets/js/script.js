@@ -282,29 +282,24 @@ function checkout() {
         showNotification('Giỏ hàng trống!', 'warning');
         return;
     }
-    
-    // Check if user is logged in
+
     const isLoggedIn = document.querySelector('.user-menu') !== null;
-    
+
     if (!isLoggedIn) {
         showNotification('Vui lòng đăng nhập để thanh toán!', 'warning');
         window.location.href = 'login.php';
         return;
     }
-    
-    // Create order data
+
     const orderData = {
         items: cart,
         total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         timestamp: new Date().toISOString()
     };
-    
-    // Send to server (implement your checkout logic here)
+
     fetch('api/checkout.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData)
     })
     .then(response => response.json())
@@ -315,10 +310,9 @@ function checkout() {
             saveCartToStorage();
             toggleCart();
             showNotification('Đặt hàng thành công!', 'success');
-            // Redirect to order confirmation page
             window.location.href = 'order-confirmation.php?order_id=' + data.order_id;
         } else {
-            showNotification('Có lỗi xảy ra khi đặt hàng!', 'error');
+            showNotification(data.message || 'Có lỗi xảy ra khi đặt hàng!', 'error');
         }
     })
     .catch(error => {
@@ -326,6 +320,7 @@ function checkout() {
         showNotification('Có lỗi xảy ra khi đặt hàng!', 'error');
     });
 }
+
 
 // Contact Form Handler
 function handleContactSubmit(event) {

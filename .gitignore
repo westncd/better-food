@@ -1,2 +1,4 @@
 /vendor/
 assets/js/service-account-key.json
+*.json
+*.env

@@ -1,13 +1,14 @@
 <?php
 session_start();
-require_once 'config/database.php';
 
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['user']['uid'])) {
     header("Location: login.php");
     exit;
 }
 
-$user_id = $_SESSION['user']['id'];
+$projectId = 'foodstore-1c8f1'; // ← Thay bằng Project ID của bạn
+$uid = $_SESSION['user']['uid'];
+$documentPath = "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/users/$uid";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $full_name = trim($_POST['full_name']);
@@ -16,21 +17,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];
 
-    // Cập nhật thông tin cơ bản
-    $stmt = $conn->prepare("UPDATE users SET full_name = ?, phone = ?, address = ? WHERE id = ?");
-    $stmt->execute([$full_name, $phone, $address, $user_id]);
+    // Chuẩn bị dữ liệu cập nhật
+    $updateFields = [
+        'fields' => [
+            'full_name' => ['stringValue' => $full_name],
+            'phone'     => ['stringValue' => $phone],
+            'address'   => ['stringValue' => $address],
+        ]
+    ];
 
-    // Cập nhật mật khẩu nếu có
+    // Nếu đổi mật khẩu
     if (!empty($new_password) && $new_password === $confirm_password) {
         $hashed = password_hash($new_password, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
-        $stmt->execute([$hashed, $user_id]);
+        $updateFields['fields']['password'] = ['stringValue' => $hashed];
     }
 
-    // Cập nhật lại session
-    $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->execute([$user_id]);
-    $_SESSION['user'] = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Gửi PATCH request để cập nhật Firestore
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $documentPath."?updateMask.fieldPaths=full_name&updateMask.fieldPaths=phone&updateMask.fieldPaths=address".(isset($updateFields['fields']['password']) ? "&updateMask.fieldPaths=password" : ""));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($updateFields));
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    // Reload lại dữ liệu người dùng
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $documentPath);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $result = json_decode($response, true);
+
+    if (isset($result['fields'])) {
+        $_SESSION['user'] = [
+            'uid'       => $uid,
+            'username'  => $result['fields']['username']['stringValue'] ?? '',
+            'email'     => $result['fields']['email']['stringValue'] ?? '',
+            'role'      => $result['fields']['role']['stringValue'] ?? 'user',
+            'full_name' => $result['fields']['full_name']['stringValue'] ?? '',
+            'phone'     => $result['fields']['phone']['stringValue'] ?? '',
+            'address'   => $result['fields']['address']['stringValue'] ?? '',
+        ];
+    }
 
     header("Location: index.php");
     exit;
