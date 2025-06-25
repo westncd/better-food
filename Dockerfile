@@ -1,7 +1,9 @@
 FROM php:8.2-apache
 
-# Install SQLite and enable PDO SQLite
+# Install SQLite, Git, unzip (cho composer)
 RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
     sqlite3 \
     libsqlite3-dev \
     && docker-php-ext-install pdo_sqlite
@@ -18,19 +20,12 @@ COPY . /var/www/html/
 # Run Composer install
 RUN composer install
 
-# Make upload directory writable
+# Set permissions
 RUN mkdir -p /var/www/html/uploads /var/www/html/tmp \
     && chown -R www-data:www-data /var/www/html/uploads \
-    && chown -R www-data:www-data /var/www/html/tmp
+    && chown -R www-data:www-data /var/www/html/tmp \
+    && chown -R www-data:www-data /var/www/html/config
 
-# Make sure database directory is writable
-RUN chown -R www-data:www-data /var/www/html/config
-
-# Set working directory
 WORKDIR /var/www/html
-
-# Expose port 80
 EXPOSE 80
-
-# Start Apache in foreground
 CMD ["apache2-foreground"]
