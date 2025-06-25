@@ -187,7 +187,7 @@ function parseFirestoreFields(array $fields): array {
                 .then(data => {
                     console.log('Response:', data); // ✅ LOG để kiểm tra
                     if (data.success) {
-                        window.location.href = 'index.php'; // ✅ chuyển hướng
+                       window.location.replace('index.php');
                     } else {
                         alert("Google login thất bại: " + data.message);
                     }
