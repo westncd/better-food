@@ -1,0 +1,17 @@
+{
+    "name": "admin/better-food",
+    "autoload": {
+        "psr-4": {
+            "Admin\\BetterFood\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "VyDang1010",
+            "email": "dangquynhvictory2004@gmail.com"
+        }
+    ],
+    "require": {
+        "google/cloud-storage": "^1.48"
+    }
+}
