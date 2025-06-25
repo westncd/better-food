@@ -66,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Đăng nhập</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="auth-container" style="max-width: 500px; margin: 100px auto; padding: 2rem;">
@@ -79,6 +80,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <br>
             <button type="submit" class="btn-login">Đăng nhập</button>
         </form>
+
+        <div style="margin-top: 1rem; text-align:center;">
+            <div id="g_id_onload"
+                data-client_id="555580540304-pan2juv0g8vik6d71lhpgm151bk164k7.apps.googleusercontent.com"
+                data-context="signin"
+                data-ux_mode="popup"
+                data-callback="handleCredentialResponse"
+                data-auto_prompt="false">
+            </div>
+
+            <div class="g_id_signin"
+                data-type="standard"
+                data-size="large"
+                data-theme="outline"
+                data-text="sign_in_with"
+                data-shape="rectangular"
+                data-logo_alignment="left">
+            </div>
+        </div>
+
+        <script>
+            function handleCredentialResponse(response) {
+                console.log("Google ID Token:", response.credential);
+                // Gửi ID token này lên server để xác thực và lấy thông tin người dùng nếu cần
+                // Có thể dùng fetch() hoặc AJAX ở đây nếu muốn
+            }
+        </script>
+
         <p style="text-align:center; margin-top: 1rem;">Chưa có tài khoản? <a href="register.php">Đăng ký</a></p>
     </div>
 </body>

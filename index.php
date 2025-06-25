@@ -3,8 +3,8 @@ session_start();
 require_once 'config/database.php';
 
 // YouTube API call
-$apiKey = 'AIzaSyBudT7keuhK7_S0-soqKxItIe01-H5dp9s'; // ← Key của bạn
-$searchQuery = 'food recipes'; // Có thể sửa thành từ khóa khác
+$apiKey = 'AIzaSyBudT7keuhK7_S0-soqKxItIe01-H5dp9s'; 
+$searchQuery = 'food recipes'; 
 $maxResults = 4;
 
 $youtubeApiUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=" . urlencode($searchQuery) . "&key={$apiKey}&maxResults={$maxResults}";
@@ -37,14 +37,18 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-89L907G3JE"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+
+    function gtag() {
+        dataLayer.push(arguments);
+    }
     gtag('js', new Date());
 
     gtag('config', 'G-89L907G3JE');
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
 </head>
 
 
@@ -282,6 +286,66 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
     </section>
+
+    <h2>Google Vision API Demo (OCR)</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="analyzeImage()">Phân tích ảnh</button>
+    <pre id="result"></pre>
+
+    <script>
+    async function analyzeImage() {
+        const fileInput = document.getElementById("imageInput");
+        const resultBox = document.getElementById("result");
+
+        if (!fileInput.files.length) {
+            alert("Hãy chọn một ảnh trước!");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function() {
+            const base64Image = reader.result.split(',')[1]; // Bỏ phần header
+            const response = await fetch(
+                "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyDFaLfXEg66QyP1mvXjoz8urzo_3VACf4k", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        requests: [{
+                            image: {
+                                content: base64Image
+                            },
+                            features: [{
+                                type: "TEXT_DETECTION"
+                            }],
+                        }, ],
+                    }),
+                }
+            );
+
+            const data = await response.json();
+            const text = data.responses[0]?.fullTextAnnotation?.text || "Không nhận diện được.";
+            resultBox.textContent = text;
+        };
+
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+    </script>
+
+    <section class="google-form-section">
+        <div class="container">
+            <div class="form-wrapper">
+                <iframe
+                    src="https://docs.google.com/forms/d/e/1FAIpQLSck80da4nb9JuPb1zVG69UVjJrJNCFLgZXFTdtVdL6Wmn1wGQ/viewform?embedded=true"
+                    width="100%" height="600" frameborder="0" marginheight="0" marginwidth="0">
+                    Đang tải…
+                </iframe>
+            </div>
+        </div>
+    </section>
+
+
 
     <!-- Footer -->
     <footer class="footer">

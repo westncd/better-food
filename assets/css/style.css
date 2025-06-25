@@ -56,6 +56,17 @@ body {
     transition: color 0.3s;
 }
 
+/*  */
+.form-wrapper {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+}
+
+
 .nav-menu a:hover {
     color: #e74c3c;
 }
