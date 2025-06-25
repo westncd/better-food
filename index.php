@@ -3,14 +3,48 @@ session_start();
 require_once 'config/database.php';
 
 // YouTube API call
-$apiKey = 'AIzaSyBudT7keuhK7_S0-soqKxItIe01-H5dp9s'; // ← Key của bạn
+$apiKey = 'AIzaSyA7Wg-TthgHJzPp73GeXDR93t3JBNONq4s'; // ← Key của bạn
 $searchQuery = 'food recipes'; // Có thể sửa thành từ khóa khác
 $maxResults = 4;
 
 $youtubeApiUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=" . urlencode($searchQuery) . "&key={$apiKey}&maxResults={$maxResults}";
 
-$youtubeResponse = file_get_contents($youtubeApiUrl);
-$youtubeData = json_decode($youtubeResponse, true);
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $youtubeApiUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($httpCode == 200) {
+    $youtubeData = json_decode($response, true);
+} else {
+    $youtubeData = ['items' => []]; // để tránh lỗi foreach
+    error_log("❌ YouTube API error: HTTP $httpCode - $response");
+}
+
+if (isset($_SESSION['user']['uid'])) {
+    $projectId = 'foodstore-1c8f1'; // ← Thay bằng Project ID của bạn
+    $uid = $_SESSION['user']['uid'];
+    $documentPath = "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/users/$uid";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $documentPath);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $result = json_decode($response, true);
+    
+    if (isset($result['fields'])) {
+        $userData = [
+            'username' => $result['fields']['username']['stringValue'] ?? '',
+            'email'    => $result['fields']['email']['stringValue'] ?? '',
+            'role'     => $result['fields']['role']['stringValue'] ?? 'user',
+        ];
+    }
+}
+
 
 
 // Lấy danh sách món ăn từ database
@@ -69,17 +103,18 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
                     </div>
-                    <?php if(isset($_SESSION['user'])): ?>
+                    <?php if(isset($userData)): ?>
                     <div class="user-menu">
-                        <span>Xin chào, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
+                        <span>Xin chào, <?= htmlspecialchars($userData['username']) ?></span>
                         <a href="profile.php" class="btn-logout">Thông tin</a>
-                        <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                        <?php if ($userData['role'] === 'admin'): ?>
                         <a href="user-management.php" class="btn-logout">Quản lý người dùng</a>
                         <a href="product-management.php" class="btn-logout">Quản lý món ăn</a>
                         <?php endif; ?>
                         <a href="logout.php" class="btn-logout">Đăng xuất</a>
                     </div>
                     <?php else: ?>
+
                     <div class="auth-buttons">
                         <a href="login.php" class="btn-login">Đăng nhập</a>
                         <a href="register.php" class="btn-register">Đăng ký</a>
@@ -186,9 +221,17 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
                 <div class="about-image">
-                    <img src="assets/images/about-us.jpg" alt="Về chúng tôi">
+                    <img src="uploads/about-us.jpg" alt="Về chúng tôi">
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section class="survey-wrapper">
+        <div class="survey-section">
+            <h3>Điền khảo sát nhé!</h3>
+            <p>Ý kiến của bạn giúp chúng mình cải thiện dịch vụ nè:</p>
+            <iframe src="https://survey.zohopublic.com/zs/ldD5Zm" title="Khảo sát khách hàng" allow="autoplay" allowfullscreen></iframe>
         </div>
     </section>
 
