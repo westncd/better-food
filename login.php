@@ -1,24 +1,25 @@
 <?php
-require 'config/database.php';
 require 'vendor/autoload.php';
+require 'config/database.php';
 
 use Kreait\Firebase\Factory;
+use Kreait\Firebase\Exception\Auth\InvalidPassword;
+use Kreait\Firebase\Exception\Auth\UserNotFound;
 
 session_start();
 
-$factory = (new Factory)
-    ->withServiceAccount(__DIR__ . '/foodstore-1c8f1-firebase-adminsdk-fbsvc-41b5c32875.json');
-
+// Khởi tạo Firebase
+$factory = (new Factory)->withServiceAccount(__DIR__ . '/foodstore-1c8f1-firebase-adminsdk-fbsvc-41b5c32875.json');
 $auth = $factory->createAuth();
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_email'])) {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
 
-    // reCAPTCHA
+    // Kiểm tra reCAPTCHA
     if (empty($recaptchaResponse)) {
         $error = "Vui lòng xác nhận bạn không phải robot.";
     } else {
@@ -33,14 +34,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Firebase Auth
     if (empty($error)) {
         try {
             $signInResult = $auth->signInWithEmailAndPassword($email, $password);
             $firebaseUser = $signInResult->data();
             $uid = $firebaseUser['localId'] ?? null;
 
-            // Lấy thông tin người dùng từ Firestore qua REST API
             $userData = getUserDataFromFirestore($uid);
 
             if ($userData) {
@@ -65,10 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Không tìm thấy thông tin người dùng.";
             }
 
-        } catch (\Kreait\Firebase\Exception\Auth\InvalidPassword $e) {
+        } catch (InvalidPassword | UserNotFound $e) {
             $error = "Email hoặc mật khẩu không đúng!";
-        } catch (\Kreait\Firebase\Exception\Auth\UserNotFound $e) {
-            $error = "Tài khoản không tồn tại!";
         } catch (Exception $e) {
             $error = "Lỗi: " . $e->getMessage();
         }
@@ -133,7 +130,7 @@ function getFirebaseAccessToken(): string {
 function parseFirestoreFields(array $fields): array {
     $parsed = [];
     foreach ($fields as $key => $val) {
-        $parsed[$key] = reset($val); // Lấy giá trị đầu tiên
+        $parsed[$key] = reset($val);
     }
     return $parsed;
 }
@@ -150,49 +147,54 @@ function parseFirestoreFields(array $fields): array {
 </head>
 <body>
 <div class="auth-container" style="max-width: 500px; margin: 100px auto; padding: 2rem;">
-    <h2 style="text-align:center; margin-bottom: 20px;">Đăng nhập</h2>
+    <h2 style="text-align:center;">Đăng nhập</h2>
     <?php if (!empty($error)) echo "<p style='color:red;'>$error</p>"; ?>
+
+    <!-- Đăng nhập bằng email -->
     <form method="POST">
         <input type="email" name="email" placeholder="Email" required class="form-group"><br>
         <input type="password" name="password" placeholder="Mật khẩu" required class="form-group"><br>
-            <div class="g-recaptcha" data-sitekey="6Lf2LGwrAAAAACTjX_uVV9GWgtf_-OdnpIh-QnUJ"></div>
-            <br>
-            <button type="submit" class="btn-login">Đăng nhập</button>
-        </form>
-
-        <div style="margin-top: 1rem; text-align:center;">
-            <div id="g_id_onload"
-                data-client_id="555580540304-pan2juv0g8vik6d71lhpgm151bk164k7.apps.googleusercontent.com"
-                data-context="signin"
-                data-ux_mode="popup"
-                data-callback="handleCredentialResponse"
-                data-auto_prompt="false">
-            </div>
-
-            <div class="g_id_signin"
-                data-type="standard"
-                data-size="large"
-                data-theme="outline"
-                data-text="sign_in_with"
-                data-shape="rectangular"
-                data-logo_alignment="left">
-            </div>
-        </div>
-
-        <script>
-            function handleCredentialResponse(response) {
-                console.log("Google ID Token:", response.credential);
-                // Gửi ID token này lên server để xác thực và lấy thông tin người dùng nếu cần
-                // Có thể dùng fetch() hoặc AJAX ở đây nếu muốn
-            }
-        </script>
-
-        <p style="text-align:center; margin-top: 1rem;">Chưa có tài khoản? <a href="register.php">Đăng ký</a></p>
-    </div>
-        <div class="g-recaptcha" data-sitekey="6Lf2LGwrAAAAACTjX_uVV9GWgtf_-OdnpIh-QnUJ"></div>
-        <br>
-        <button type="submit" class="btn-login">Đăng nhập</button>
+        <div class="g-recaptcha" data-sitekey="6Lf2LGwrAAAAACTjX_uVV9GWgtf_-OdnpIh-QnUJ"></div><br>
+        <button type="submit" name="login_email" class="btn-login">Đăng nhập bằng Email</button>
     </form>
+
+    <hr style="margin: 20px 0;">
+
+    <!-- Google Sign-In -->
+    <div id="g_id_onload"
+         data-client_id="555580540304-pan2juv0g8vik6d71lhpgm151bk164k7.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false"></div>
+
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"
+         data-theme="outline"
+         data-text="sign_in_with"
+         data-shape="rectangular"
+         data-logo_alignment="left">
+    </div>
+
+    <script>
+        function handleCredentialResponse(response) {
+            fetch('google-login-handler.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_token: response.credential })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'index.php';
+                } else {
+                    alert("Đăng nhập Google thất bại.");
+                }
+            });
+        }
+    </script>
+
     <p style="text-align:center; margin-top: 1rem;">Chưa có tài khoản? <a href="register.php">Đăng ký</a></p>
 </div>
 </body>
