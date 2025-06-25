@@ -181,9 +181,8 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
             </div>
             <div class="product-grid" id="productGrid">
                 <?php foreach($products as $product): ?>
-                <div class="product-card"
-                     data-category="<?php echo $product['category_id']; ?>"
-                     data-name="<?php echo strtolower($product['name']); ?>">
+                <div class="product-card" data-category="<?php echo $product['category_id']; ?>"
+                    data-name="<?php echo strtolower($product['name']); ?>">
                     <div class="product-image">
                         <img src="<?php echo $product['image']; ?>" alt="<?php echo $product['name']; ?>">
                         <div class="product-overlay">
@@ -197,10 +196,10 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                         <p class="product-description"><?php echo substr($product['description'], 0, 100); ?>...</p>
                         <div class="product-price">
                             <?php if($product['sale_price'] > 0): ?>
-                                <span class="original-price"><?php echo number_format($product['price']); ?>đ</span>
-                                <span class="sale-price"><?php echo number_format($product['sale_price']); ?>đ</span>
+                            <span class="original-price"><?php echo number_format($product['price']); ?>đ</span>
+                            <span class="sale-price"><?php echo number_format($product['sale_price']); ?>đ</span>
                             <?php else: ?>
-                                <span class="price"><?php echo number_format($product['price']); ?>đ</span>
+                            <span class="price"><?php echo number_format($product['price']); ?>đ</span>
                             <?php endif; ?>
                         </div>
                         <button class="btn-add-cart"
@@ -249,13 +248,10 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </section>
 
-    <section class="survey-wrapper">
-        <div class="survey-section">
-            <h3>Điền khảo sát nhé!</h3>
-            <p>Ý kiến của bạn giúp chúng mình cải thiện dịch vụ nè:</p>
-            <iframe src="https://survey.zohopublic.com/zs/ldD5Zm" title="Khảo sát khách hàng" allow="autoplay" allowfullscreen></iframe>
-        </div>
-    </section>
+
+    <div style="text-align: center; margin-top: 1.5rem;">
+        <a href="https://survey.zohopublic.com/zs/ldD5Zm" class="btn-primary">Đi tới khảo sát đầy đủ</a>
+    </div>
 
     <!-- YouTube Section -->
     <section class="youtube-section">
@@ -348,10 +344,12 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </section>
 
-    <h2>Google Vision API Demo (OCR)</h2>
-    <input type="file" id="imageInput" accept="image/*">
-    <button onclick="analyzeImage()">Phân tích ảnh</button>
-    <pre id="result"></pre>
+    <h2 class="vision-title">Google Vision API Demo (OCR)</h2>
+    <div class="vision-wrapper">
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="analyzeImage()">Phân tích ảnh</button>
+        <pre id="result"></pre>
+    </div>
 
     <script>
     async function analyzeImage() {
@@ -539,50 +537,53 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
             <span class="modal-close" onclick="closeSearchModal()">&times;</span>
             <h3>Tìm kiếm sản phẩm</h3>
             <form method="GET" action="#menu">
-                <input type="text" name="search" id="searchInput" placeholder="Nhập tên món ăn..." style="width: 100%; padding: 10px; margin-bottom: 1rem;" required>
-                <button type="submit" style="padding: 10px 20px; background: #e67e22; color: white; border: none; border-radius: 6px;">🔍 Tìm kiếm</button>
+                <input type="text" name="search" id="searchInput" placeholder="Nhập tên món ăn..."
+                    style="width: 100%; padding: 10px; margin-bottom: 1rem;" required>
+                <button type="submit"
+                    style="padding: 10px 20px; background: #e67e22; color: white; border: none; border-radius: 6px;">🔍
+                    Tìm kiếm</button>
             </form>
         </div>
     </div>
 
     <script>
-        function openSearchModal() {
-            document.getElementById('searchModal').style.display = 'block';
-            document.getElementById('searchInput').focus();
-        }
+    function openSearchModal() {
+        document.getElementById('searchModal').style.display = 'block';
+        document.getElementById('searchInput').focus();
+    }
 
-        function closeSearchModal() {
-            document.getElementById('searchModal').style.display = 'none';
-        }
+    function closeSearchModal() {
+        document.getElementById('searchModal').style.display = 'none';
+    }
 
-        // Đóng modal nếu bấm ngoài vùng nội dung
-        window.onclick = function(event) {
-            const modal = document.getElementById('searchModal');
-            if (event.target === modal) {
-                closeSearchModal();
+    // Đóng modal nếu bấm ngoài vùng nội dung
+    window.onclick = function(event) {
+        const modal = document.getElementById('searchModal');
+        if (event.target === modal) {
+            closeSearchModal();
+        }
+    }
+    document.getElementById("searchInput").addEventListener("input", function() {
+        const keyword = this.value.toLowerCase().trim();
+        const products = document.querySelectorAll(".product-card");
+
+        products.forEach(product => {
+            function removeAccents(str) {
+                return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
             }
-        }
-        document.getElementById("searchInput").addEventListener("input", function () {
-            const keyword = this.value.toLowerCase().trim();
-            const products = document.querySelectorAll(".product-card");
 
-            products.forEach(product => {
-                function removeAccents(str) {
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-        document.getElementById("searchInput").addEventListener("input", function () {
-            const keyword = removeAccents(this.value.trim());
-            const products = document.querySelectorAll(".product-card");
-            products.forEach(product => {
-                const name = removeAccents(product.dataset.name || "");
-                product.style.display = name.includes(keyword) ? "block" : "none";
+            document.getElementById("searchInput").addEventListener("input", function() {
+                const keyword = removeAccents(this.value.trim());
+                const products = document.querySelectorAll(".product-card");
+                products.forEach(product => {
+                    const name = removeAccents(product.dataset.name || "");
+                    product.style.display = name.includes(keyword) ? "block" : "none";
+                });
             });
-        });
 
-            });
         });
-
+    });
     </script>
 </body>
+
 </html>

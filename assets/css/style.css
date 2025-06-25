@@ -77,6 +77,118 @@ body {
     gap: 1rem;
 }
 
+/*  */
+.survey-wrapper {
+    background: #fff;
+    padding: 3rem 2rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+    margin: 3rem auto;
+    max-width: 800px;
+}
+
+.survey-section h3 {
+    color: #e74c3c;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 2rem;
+}
+
+.survey-section p {
+    text-align: center;
+    color: #555;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+/* Responsive iframe container */
+.survey-section iframe {
+    width: 100%;
+    height: 600px;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+}
+
+/* Responsive on mobile */
+@media (max-width: 768px) {
+    .survey-wrapper {
+        padding: 2rem 1rem;
+    }
+
+    .survey-section iframe {
+        height: 500px;
+    }
+
+    .survey-section h3 {
+        font-size: 1.5rem;
+    }
+
+    .survey-section p {
+        font-size: 1rem;
+    }
+}
+
+/*  */
+
+.vision-title {
+    text-align: center;
+    font-size: 2rem;
+    color: #e74c3c;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+}
+
+.vision-wrapper {
+    max-width: 700px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.vision-wrapper input[type="file"] {
+    display: block;
+    margin: 0 auto 1rem;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.vision-wrapper button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.vision-wrapper button:hover {
+    background-color: #c0392b;
+}
+
+#result {
+    margin-top: 2rem;
+    text-align: left;
+    white-space: pre-wrap;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    font-size: 0.95rem;
+    color: #333;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
 .cart-icon {
     position: relative;
     cursor: pointer;
