@@ -139,6 +139,7 @@ function parseFirestoreFields(array $fields): array {
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Đăng nhập</title>
@@ -146,57 +147,60 @@ function parseFirestoreFields(array $fields): array {
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body>
-<div class="auth-container" style="max-width: 500px; margin: 100px auto; padding: 2rem;">
-    <h2 style="text-align:center;">Đăng nhập</h2>
-    <?php if (!empty($error)) echo "<p style='color:red;'>$error</p>"; ?>
+    <div class="auth-container" style="max-width: 500px; margin: 100px auto; padding: 2rem;">
+        <h2 style="text-align:center;">Đăng nhập</h2>
+        <?php if (!empty($error)) echo "<p style='color:red;'>$error</p>"; ?>
 
-    <!-- Đăng nhập bằng email -->
-    <form method="POST">
-        <input type="email" name="email" placeholder="Email" required class="form-group"><br>
-        <input type="password" name="password" placeholder="Mật khẩu" required class="form-group"><br>
-        <div class="g-recaptcha" data-sitekey="6Lf2LGwrAAAAACTjX_uVV9GWgtf_-OdnpIh-QnUJ"></div><br>
-        <button type="submit" name="login_email" class="btn-login">Đăng nhập bằng Email</button>
-    </form>
+        <!-- Đăng nhập bằng email -->
+        <form method="POST">
+            <input type="email" name="email" placeholder="Email" required class="form-group"><br>
+            <input type="password" name="password" placeholder="Mật khẩu" required class="form-group"><br>
+            <div class="g-recaptcha" data-sitekey="6Lf2LGwrAAAAACTjX_uVV9GWgtf_-OdnpIh-QnUJ"></div><br>
+            <button type="submit" name="login_email" class="btn-login">Đăng nhập bằng Email</button>
+        </form>
 
-    <hr style="margin: 20px 0;">
+        <hr style="margin: 20px 0;">
 
-    <!-- Google Sign-In -->
-    <div id="g_id_onload"
-         data-client_id="555580540304-pan2juv0g8vik6d71lhpgm151bk164k7.apps.googleusercontent.com"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false"></div>
+        <!-- Google Sign-In -->
+        <div id="g_id_onload" data-client_id="555580540304-pan2juv0g8vik6d71lhpgm151bk164k7.apps.googleusercontent.com"
+            data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse"
+            data-auto_prompt="false"></div>
 
-    <div class="g_id_signin"
-         data-type="standard"
-         data-size="large"
-         data-theme="outline"
-         data-text="sign_in_with"
-         data-shape="rectangular"
-         data-logo_alignment="left">
-    </div>
+        <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"
+            data-shape="rectangular" data-logo_alignment="left">
+        </div>
 
-    <script>
+        <script>
         function handleCredentialResponse(response) {
             fetch('google-login-handler.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_token: response.credential })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = 'index.php';
-                } else {
-                    alert("Đăng nhập Google thất bại.");
-                }
-            });
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_token: response.credential
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('Response:', data); // ✅ LOG để kiểm tra
+                    if (data.success) {
+                        window.location.href = 'index.php'; // ✅ chuyển hướng
+                    } else {
+                        alert("Google login thất bại: " + data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error('Lỗi fetch:', err);
+                    alert("Có lỗi xảy ra khi gửi token đến máy chủ.");
+                });
         }
-    </script>
+        </script>
 
-    <p style="text-align:center; margin-top: 1rem;">Chưa có tài khoản? <a href="register.php">Đăng ký</a></p>
-</div>
+        <p style="text-align:center; margin-top: 1rem;">Chưa có tài khoản? <a href="register.php">Đăng ký</a></p>
+    </div>
 </body>
+
 </html>

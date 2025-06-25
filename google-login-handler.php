@@ -7,9 +7,9 @@ use Kreait\Firebase\Factory;
 session_start();
 
 $factory = (new Factory)->withServiceAccount(__DIR__ . '/foodstore-1c8f1-firebase-adminsdk-fbsvc-41b5c32875.json');
-
-// Chỉ xử lý khi là JSON POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
+    header('Content-Type: application/json'); // ✅ BẮT BUỘC thêm dòng này
+
     $data = json_decode(file_get_contents('php://input'), true);
     $idToken = $data['id_token'] ?? null;
 
@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['CONTENT_TYPE'], 'a
         exit;
     }
 
-    // Xác minh token qua Google
+    // Xác minh token
     $verifyUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" . urlencode($idToken);
     $response = file_get_contents($verifyUrl);
     $payload = json_decode($response, true);
@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['CONTENT_TYPE'], 'a
         exit;
     }
 
+    // Tạo hoặc lấy dữ liệu Firestore
     $googleUid = $payload['sub'];
     $email     = $payload['email'] ?? '';
     $fullName  = $payload['name'] ?? '';
@@ -38,8 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['CONTENT_TYPE'], 'a
         exit;
     }
 
-    // Lưu Firestore
-    $firestore = $factory->createFirestore()->database();
+    $firestore = $GLOBALS['factory']->createFirestore()->database();
     $userRef = $firestore->collection('users')->document($googleUid);
     $snapshot = $userRef->snapshot();
 
