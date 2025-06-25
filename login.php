@@ -185,16 +185,16 @@ function parseFirestoreFields(array $fields): array {
                 })
                 .then(res => res.json())
                 .then(data => {
-                    console.log('Response:', data); // ✅ LOG để kiểm tra
+                    console.log('✅ Response:', data);
                     if (data.success) {
-                       window.location.replace('index.php');
+                        window.location.href = 'index.php';
                     } else {
-                        alert("Google login thất bại: " + data.message);
+                        alert("❌ Google login thất bại: " + data.message);
                     }
                 })
                 .catch(err => {
-                    console.error('Lỗi fetch:', err);
-                    alert("Có lỗi xảy ra khi gửi token đến máy chủ.");
+                    console.error('🔥 Lỗi fetch:', err);
+                    alert("⚠️ Có lỗi xảy ra khi gửi token đến máy chủ: " + err.message);
                 });
         }
         </script>
