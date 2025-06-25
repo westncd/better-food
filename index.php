@@ -2,6 +2,17 @@
 session_start();
 require_once 'config/database.php';
 
+// YouTube API call
+$apiKey = 'AIzaSyBudT7keuhK7_S0-soqKxItIe01-H5dp9s'; // ← Key của bạn
+$searchQuery = 'food recipes'; // Có thể sửa thành từ khóa khác
+$maxResults = 4;
+
+$youtubeApiUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=" . urlencode($searchQuery) . "&key={$apiKey}&maxResults={$maxResults}";
+
+$youtubeResponse = file_get_contents($youtubeApiUrl);
+$youtubeData = json_decode($youtubeResponse, true);
+
+
 // Lấy danh sách món ăn từ database
 $stmt = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY created_at DESC");
 $stmt->execute();
@@ -15,6 +26,7 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,6 +46,8 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 </head>
+
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -56,20 +70,20 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                         <span class="cart-count" id="cartCount">0</span>
                     </div>
                     <?php if(isset($_SESSION['user'])): ?>
-                        <div class="user-menu">
-                            <span>Xin chào, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
-                            <a href="profile.php" class="btn-logout">Thông tin</a>
-                            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
-                                <a href="user-management.php" class="btn-logout">Quản lý người dùng</a>
-                                <a href="product-management.php" class="btn-logout">Quản lý món ăn</a>
-                            <?php endif; ?>
-                            <a href="logout.php" class="btn-logout">Đăng xuất</a>
-                        </div>
+                    <div class="user-menu">
+                        <span>Xin chào, <?= htmlspecialchars($_SESSION['user']['username']) ?></span>
+                        <a href="profile.php" class="btn-logout">Thông tin</a>
+                        <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+                        <a href="user-management.php" class="btn-logout">Quản lý người dùng</a>
+                        <a href="product-management.php" class="btn-logout">Quản lý món ăn</a>
+                        <?php endif; ?>
+                        <a href="logout.php" class="btn-logout">Đăng xuất</a>
+                    </div>
                     <?php else: ?>
-                        <div class="auth-buttons">
-                            <a href="login.php" class="btn-login">Đăng nhập</a>
-                            <a href="register.php" class="btn-register">Đăng ký</a>
-                        </div>
+                    <div class="auth-buttons">
+                        <a href="login.php" class="btn-login">Đăng nhập</a>
+                        <a href="register.php" class="btn-register">Đăng ký</a>
+                    </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -107,7 +121,8 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
             <div class="menu-filter">
                 <button class="filter-btn active" onclick="filterProducts('all')">Tất cả</button>
                 <?php foreach($categories as $category): ?>
-                <button class="filter-btn" onclick="filterProducts(<?php echo $category['id']; ?>)"><?php echo $category['name']; ?></button>
+                <button class="filter-btn"
+                    onclick="filterProducts(<?php echo $category['id']; ?>)"><?php echo $category['name']; ?></button>
                 <?php endforeach; ?>
             </div>
             <div class="product-grid" id="productGrid">
@@ -126,13 +141,14 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                         <p class="product-description"><?php echo substr($product['description'], 0, 100); ?>...</p>
                         <div class="product-price">
                             <?php if($product['sale_price'] > 0): ?>
-                                <span class="original-price"><?php echo number_format($product['price']); ?>đ</span>
-                                <span class="sale-price"><?php echo number_format($product['sale_price']); ?>đ</span>
+                            <span class="original-price"><?php echo number_format($product['price']); ?>đ</span>
+                            <span class="sale-price"><?php echo number_format($product['sale_price']); ?>đ</span>
                             <?php else: ?>
-                                <span class="price"><?php echo number_format($product['price']); ?>đ</span>
+                            <span class="price"><?php echo number_format($product['price']); ?>đ</span>
                             <?php endif; ?>
                         </div>
-                        <button class="btn-add-cart" onclick="addToCart(<?php echo $product['id']; ?>, '<?php echo $product['name']; ?>', <?php echo $product['sale_price'] > 0 ? $product['sale_price'] : $product['price']; ?>, '<?php echo $product['image']; ?>')">
+                        <button class="btn-add-cart"
+                            onclick="addToCart(<?php echo $product['id']; ?>, '<?php echo $product['name']; ?>', <?php echo $product['sale_price'] > 0 ? $product['sale_price'] : $product['price']; ?>, '<?php echo $product['image']; ?>')">
                             <i class="fas fa-cart-plus"></i> Thêm vào giỏ
                         </button>
                     </div>
@@ -148,7 +164,9 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
             <div class="about-content">
                 <div class="about-text">
                     <h2>Về chúng tôi</h2>
-                    <p>Food Store là cửa hàng đồ ăn online uy tín, chuyên cung cấp các món ăn ngon, chất lượng cao với giá cả hợp lý. Chúng tôi cam kết mang đến cho khách hàng những trải nghiệm ẩm thực tuyệt vời nhất.</p>
+                    <p>Food Store là cửa hàng đồ ăn online uy tín, chuyên cung cấp các món ăn ngon, chất lượng cao với
+                        giá cả hợp lý. Chúng tôi cam kết mang đến cho khách hàng những trải nghiệm ẩm thực tuyệt vời
+                        nhất.</p>
                     <div class="features">
                         <div class="feature-item">
                             <i class="fas fa-shipping-fast"></i>
@@ -174,6 +192,27 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </section>
 
+    <!-- YouTube Section -->
+    <section class="youtube-section">
+        <div class="container">
+            <h2>Video Món Ăn Hấp Dẫn</h2>
+            <div class="video-grid">
+                <?php foreach ($youtubeData['items'] as $video): ?>
+                <div class="video-item">
+                    <iframe width="100%" height="215"
+                        src="https://www.youtube.com/embed/<?php echo $video['id']['videoId']; ?>" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                    <p><?php echo $video['snippet']['title']; ?></p>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+
+
+
     <!-- Contact Section -->
     <section id="contact" class="contact">
         <div class="container">
@@ -184,21 +223,21 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                         <i class="fas fa-map-marker-alt"></i>
                         <div>
                             <h4>Địa chỉ</h4>
-                            <p>123 Đường ABC, Quận 1, TP.HCM</p>
+                            <p>Hà Nội</p>
                         </div>
                     </div>
                     <div class="contact-item">
                         <i class="fas fa-phone"></i>
                         <div>
                             <h4>Điện thoại</h4>
-                            <p>0123 456 789</p>
+                            <p>0123456789</p>
                         </div>
                     </div>
                     <div class="contact-item">
                         <i class="fas fa-envelope"></i>
                         <div>
                             <h4>Email</h4>
-                            <p>info@foodstore.com</p>
+                            <p>khanhhuyendao240304@gmail.com.</p>
                         </div>
                     </div>
                 </div>
@@ -214,6 +253,32 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <button type="submit" class="btn-primary">Gửi tin nhắn</button>
                 </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="translate-section section">
+        <div class="container">
+            <h2 class="section-title" style="text-align:center; margin-bottom: 2rem;">🌐 Dịch văn bản</h2>
+            <div class="form-group">
+                <textarea id="textToTranslate" rows="4" class="form-control"
+                    placeholder="Nhập văn bản cần dịch..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <select id="targetLang" class="form-control">
+                    <option value="en">Tiếng Anh</option>
+                    <option value="ja">Tiếng Nhật</option>
+                    <option value="ko">Tiếng Hàn</option>
+                    <option value="zh-CN">Tiếng Trung</option>
+                    <option value="fr">Tiếng Pháp</option>
+                </select>
+            </div>
+
+            <button class="btn-primary" onclick="translateText()" style="width: 100%;">Dịch ngay</button>
+
+            <div id="output" class="result"
+                style="margin-top: 1.5rem; background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.05);">
             </div>
         </div>
     </section>
@@ -278,6 +343,71 @@ $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </div>
 
+
+
+    <script>
+    const API_KEY = "AIzaSyDFaLfXEg66QyP1mvXjoz8urzo_3VACf4k"; // ← Thay bằng API key của bạn
+
+    function translateText() {
+        const text = document.getElementById("textToTranslate").value.trim();
+        const target = document.getElementById("targetLang").value;
+        const outputDiv = document.getElementById("output");
+
+        if (!text) {
+            outputDiv.innerHTML = "❗ Vui lòng nhập văn bản cần dịch.";
+            return;
+        }
+
+        const url = `https://translation.googleapis.com/language/translate/v2?key=${API_KEY}`;
+
+        fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    q: text,
+                    target: target
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    outputDiv.innerHTML = `❌ Lỗi: ${data.error.message}`;
+                } else {
+                    const translatedText = data.data.translations[0].translatedText;
+                    outputDiv.innerHTML = `✅ <strong>Bản dịch:</strong><br>${translatedText}`;
+                }
+            })
+            .catch(error => {
+                outputDiv.innerHTML = "❌ Lỗi kết nối API.";
+                console.error(error);
+            });
+    }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+    // Khởi tạo EmailJS với Public Key
+    emailjs.init('CALbNSEplitYOlJs1'); // Thay bằng public key của bạn
+
+    // Bắt sự kiện gửi form
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Ngăn reload trang
+
+        // Gửi form qua EmailJS
+        emailjs.sendForm('service_o8xrukb', 'template_5zo08dk', this)
+            .then(function() {
+                alert('✅ Gửi tin nhắn thành công!');
+            }, function(error) {
+                alert('❌ Lỗi khi gửi: ' + JSON.stringify(error));
+            });
+
+        this.reset(); // Reset form
+    });
+    </script>
+
     <script src="assets/js/script.js"></script>
 </body>
+
 </html>
