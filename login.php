@@ -134,85 +134,11 @@ function parseFirestoreFields(array $fields): array {
     }
     return $parsed;
 }
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
-    $data = json_decode(file_get_contents('php://input'), true);
-    $idToken = $data['id_token'] ?? null;
-
-    if (!$idToken) {
-        echo json_encode(['success' => false, 'message' => 'Thiếu id_token']);
-        exit;
-    }
-
-    // Xác minh id_token thông qua Google API
-    $verifyUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" . urlencode($idToken);
-    $response = file_get_contents($verifyUrl);
-    $payload = json_decode($response, true);
-
-    if (!isset($payload['sub']) || $payload['aud'] !== '555580540304-pan2juv0g8vik6d71lhpgm151bk164k7.apps.googleusercontent.com') {
-        echo json_encode(['success' => false, 'message' => 'Token không hợp lệ hoặc sai audience']);
-        exit;
-    }
-
-    // Thông tin người dùng từ Google
-    $googleUid = $payload['sub'];
-    $email     = $payload['email'] ?? '';
-    $fullName  = $payload['name'] ?? '';
-    $avatar    = $payload['picture'] ?? '';
-
-    if (!$email) {
-        echo json_encode(['success' => false, 'message' => 'Thiếu thông tin người dùng']);
-        exit;
-    }
-
-    // Kết nối Firestore
-    $firestore = $factory->createFirestore()->database();
-    $userRef = $firestore->collection('users')->document($googleUid);
-    $snapshot = $userRef->snapshot();
-
-    if (!$snapshot->exists()) {
-        $userRef->set([
-            'uid'        => $googleUid,
-            'email'      => $email,
-            'full_name'  => $fullName,
-            'username'   => explode('@', $email)[0],
-            'avatar'     => $avatar,
-            'role'       => 'user',
-            'status'     => 1,
-            'created_at' => date('c'),
-        ]);
-        $userData = $userRef->snapshot()->data();
-    } else {
-        $userData = $snapshot->data();
-    }
-
-    // Check trạng thái bị khóa
-    if (isset($userData['status']) && $userData['status'] == 0) {
-        echo json_encode(['success' => false, 'message' => 'Tài khoản đã bị khóa']);
-        exit;
-    }
-
-    // Lưu session
-    $_SESSION['user'] = [
-        'uid'        => $googleUid,
-        'email'      => $userData['email'] ?? '',
-        'username'   => $userData['username'] ?? '',
-        'full_name'  => $userData['full_name'] ?? '',
-        'phone'      => $userData['phone'] ?? '',
-        'role'       => $userData['role'] ?? 'user',
-        'status'     => $userData['status'] ?? 1,
-        'created_at' => $userData['created_at'] ?? '',
-    ];
-
-    echo json_encode(['success' => true]);
-    exit;
-}
 ?>
 
 
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <title>Đăng nhập</title>
@@ -220,55 +146,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['CONTENT_TYPE'], 'a
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-
 <body>
-    <div class="auth-container" style="max-width: 500px; margin: 100px auto; padding: 2rem;">
-        <h2 style="text-align:center;">Đăng nhập</h2>
-        <?php if (!empty($error)) echo "<p style='color:red;'>$error</p>"; ?>
+<div class="auth-container" style="max-width: 500px; margin: 100px auto; padding: 2rem;">
+    <h2 style="text-align:center;">Đăng nhập</h2>
+    <?php if (!empty($error)) echo "<p style='color:red;'>$error</p>"; ?>
 
-        <!-- Đăng nhập bằng email -->
-        <form method="POST">
-            <input type="email" name="email" placeholder="Email" required class="form-group"><br>
-            <input type="password" name="password" placeholder="Mật khẩu" required class="form-group"><br>
-            <div class="g-recaptcha" data-sitekey="6Lf2LGwrAAAAACTjX_uVV9GWgtf_-OdnpIh-QnUJ"></div><br>
-            <button type="submit" name="login_email" class="btn-login">Đăng nhập bằng Email</button>
-        </form>
+    <!-- Đăng nhập bằng email -->
+    <form method="POST">
+        <input type="email" name="email" placeholder="Email" required class="form-group"><br>
+        <input type="password" name="password" placeholder="Mật khẩu" required class="form-group"><br>
+        <div class="g-recaptcha" data-sitekey="6Lf2LGwrAAAAACTjX_uVV9GWgtf_-OdnpIh-QnUJ"></div><br>
+        <button type="submit" name="login_email" class="btn-login">Đăng nhập bằng Email</button>
+    </form>
 
-        <hr style="margin: 20px 0;">
+    <hr style="margin: 20px 0;">
 
-        <!-- Google Sign-In -->
-        <div id="g_id_onload" data-client_id="555580540304-pan2juv0g8vik6d71lhpgm151bk164k7.apps.googleusercontent.com"
-            data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse"
-            data-auto_prompt="false"></div>
+    <!-- Google Sign-In -->
+    <div id="g_id_onload"
+         data-client_id="555580540304-pan2juv0g8vik6d71lhpgm151bk164k7.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false"></div>
 
-        <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"
-            data-shape="rectangular" data-logo_alignment="left">
-        </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"
+         data-theme="outline"
+         data-text="sign_in_with"
+         data-shape="rectangular"
+         data-logo_alignment="left">
+    </div>
 
-        <script>
+    <script>
         function handleCredentialResponse(response) {
             fetch('google-login-handler.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id_token: response.credential
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.href = 'index.php';
-                    } else {
-                        alert("Đăng nhập Google thất bại.");
-                    }
-                });
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_token: response.credential })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'index.php';
+                } else {
+                    alert("Đăng nhập Google thất bại.");
+                }
+            });
         }
-        </script>
+    </script>
 
-        <p style="text-align:center; margin-top: 1rem;">Chưa có tài khoản? <a href="register.php">Đăng ký</a></p>
-    </div>
+    <p style="text-align:center; margin-top: 1rem;">Chưa có tài khoản? <a href="register.php">Đăng ký</a></p>
+</div>
 </body>
-
 </html>
